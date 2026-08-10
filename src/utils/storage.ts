@@ -132,6 +132,22 @@ export const INITIAL_HABITS: Habit[] = [
     createdAt: new Date().toISOString(),
     streakShields: 0,
   },
+  {
+    id: 'habit-7',
+    title: 'No Porn (Clean Mindset)',
+    description: 'Stay pure, disciplined, and focused — zero porn/PMO daily oath',
+    category: 'mindset',
+    color: 'from-emerald-500 to-teal-600',
+    icon: 'Shield',
+    targetCount: 1,
+    unit: 'day',
+    reminderTime: '22:00',
+    reminderEnabled: true,
+    streak: 0,
+    bestStreak: 0,
+    createdAt: new Date().toISOString(),
+    streakShields: 1,
+  },
 ];
 
 // Helper to seed logs for demo habits so charts and heatmaps look stunning right away

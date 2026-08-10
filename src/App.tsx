@@ -12,7 +12,7 @@ import {
   loadStoredStats, saveStoredStats, 
   loadDarkMode, saveDarkMode, 
   loadTheme, saveTheme, THEME_CONFIG, ThemeMode,
-  getTodayString, calculateStreak, INITIAL_HABITS 
+  getTodayString, calculateStreak, calculateOverallDayStreak, INITIAL_HABITS 
 } from './utils/storage';
 import { soundFX } from './utils/audio';
 import { NotificationManager } from './utils/notifications';
@@ -162,13 +162,11 @@ export default function App() {
 
   // Recalculate total streak and stats whenever logs or habits change
   useEffect(() => {
-    const today = getTodayString();
-    let totalStreakSum = 0;
-    let maxStreakEver = stats.longestStreakEver;
+    const { current: overallStreak, best: bestOverallStreak } = calculateOverallDayStreak(habits, logs);
+    let maxStreakEver = Math.max(stats.longestStreakEver, bestOverallStreak);
 
     const updatedHabits = habits.map(h => {
-      const { current, best } = calculateStreak(h.id, logs);
-      totalStreakSum += current;
+      const { current, best } = calculateStreak(h.id, logs, habits);
       if (best > maxStreakEver) maxStreakEver = best;
       
       return {
@@ -180,10 +178,10 @@ export default function App() {
 
     setStats(prev => ({
       ...prev,
-      currentStreakTotal: totalStreakSum,
-      longestStreakEver: maxStreakEver,
+      currentStreakTotal: overallStreak,
+      longestStreakEver: Math.max(prev.longestStreakEver, maxStreakEver),
     }));
-  }, [logs]);
+  }, [logs, habits]);
 
   // Confetti Explosion state
   const [confettiBursts, setConfettiBursts] = useState<ConfettiBurst[]>([]);

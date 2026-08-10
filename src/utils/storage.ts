@@ -325,8 +325,85 @@ export const THEME_CONFIG: Record<ThemeMode, { bg: string; card: string; border:
   },
 };
 
-// Recalculate habit streak based on logs
-export function calculateStreak(habitId: string, logs: HabitLog[]): { current: number; best: number } {
+// Recalculate overall streak based on 100% completion of ALL active habits for each day
+export function calculateOverallDayStreak(habits: Habit[], logs: HabitLog[]): { current: number; best: number } {
+  if (habits.length === 0) return { current: 0, best: 0 };
+
+  // Find all dates with logs
+  const datesSet = new Set(logs.map(l => l.date));
+  const perfectDatesSet = new Set<string>();
+
+  // A date is PERFECT (1) if and only if EVERY habit was completed on that date
+  datesSet.forEach(dateStr => {
+    const completedForDate = new Set(
+      logs.filter(l => l.date === dateStr && l.completed).map(l => l.habitId)
+    );
+    const is100Percent = habits.every(h => completedForDate.has(h.id));
+    if (is100Percent) {
+      perfectDatesSet.add(dateStr);
+    }
+  });
+
+  const today = getTodayString();
+  const yesterday = getYesterdayString();
+
+  let currentStreak = 0;
+  let datePointer = new Date();
+
+  // If today is not 100% complete yet:
+  if (!perfectDatesSet.has(today)) {
+    // If yesterday was 100% complete, count starting from yesterday
+    if (perfectDatesSet.has(yesterday)) {
+      datePointer.setDate(datePointer.getDate() - 1);
+    } else {
+      // Neither today nor yesterday was 100% complete -> streak is broken (0)
+      currentStreak = 0;
+    }
+  }
+
+  // Count backwards consecutive perfect days
+  if (perfectDatesSet.has(formatDate(datePointer))) {
+    while (perfectDatesSet.has(formatDate(datePointer))) {
+      currentStreak++;
+      datePointer.setDate(datePointer.getDate() - 1);
+    }
+  }
+
+  // Calculate best streak historically
+  const sortedDatesAsc = Array.from(perfectDatesSet).sort();
+  let bestStreak = 0;
+  let tempStreak = 0;
+  let prevDate: Date | null = null;
+
+  sortedDatesAsc.forEach(dStr => {
+    const curDate = new Date(dStr);
+    if (!prevDate) {
+      tempStreak = 1;
+    } else {
+      const diffMs = curDate.getTime() - prevDate.getTime();
+      const diffDays = Math.round(diffMs / (1000 * 3600 * 24));
+      if (diffDays === 1) {
+        tempStreak++;
+      } else {
+        tempStreak = 1;
+      }
+    }
+    if (tempStreak > bestStreak) bestStreak = tempStreak;
+    prevDate = curDate;
+  });
+
+  return {
+    current: currentStreak,
+    best: Math.max(bestStreak, currentStreak),
+  };
+}
+
+// Recalculate individual habit streak or overall streak
+export function calculateStreak(habitId: string, logs: HabitLog[], habits?: Habit[]): { current: number; best: number } {
+  if (habits && habits.length > 0) {
+    return calculateOverallDayStreak(habits, logs);
+  }
+
   const habitLogs = logs
     .filter(l => l.habitId === habitId && l.completed)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -340,7 +417,6 @@ export function calculateStreak(habitId: string, logs: HabitLog[]): { current: n
   let currentStreak = 0;
   let datePointer = new Date();
 
-  // If today isn't logged yet, start checking from yesterday to preserve streak continuity
   if (!logDates.has(today)) {
     if (logDates.has(yesterday)) {
       datePointer.setDate(datePointer.getDate() - 1);
@@ -356,7 +432,6 @@ export function calculateStreak(habitId: string, logs: HabitLog[]): { current: n
     }
   }
 
-  // Calculate best streak historically
   const sortedDatesAsc = Array.from(logDates).sort();
   let bestStreak = 0;
   let tempStreak = 0;

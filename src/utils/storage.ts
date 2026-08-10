@@ -38,14 +38,14 @@ export function getPastDates(daysCount: number): string[] {
 export const INITIAL_HABITS: Habit[] = [
   {
     id: 'habit-1',
-    title: 'Morning 20-min HIIT Workout',
-    description: 'Get the heart pumping and skyrocket energy for the day',
-    category: 'fitness',
-    color: 'from-amber-500 to-red-500',
-    icon: 'Dumbbell',
+    title: 'Morning Wake Up at 6 AM',
+    description: 'Rise and shine early to start the day with discipline',
+    category: 'health',
+    color: 'from-amber-400 to-orange-500',
+    icon: 'Sun',
     targetCount: 1,
-    unit: 'session',
-    reminderTime: '07:30',
+    unit: 'check-in',
+    reminderTime: '06:00',
     reminderEnabled: true,
     streak: 0,
     bestStreak: 0,
@@ -54,12 +54,28 @@ export const INITIAL_HABITS: Habit[] = [
   },
   {
     id: 'habit-2',
-    title: 'Hydrate 3 Liters Water',
-    description: 'Fuel your focus and stay peak energized',
+    title: 'Gym Workout (6:30 AM – 1 Hour)',
+    description: 'Hit the gym at 6:30 AM for a solid 1-hour session',
+    category: 'fitness',
+    color: 'from-red-500 to-rose-600',
+    icon: 'Dumbbell',
+    targetCount: 1,
+    unit: 'session',
+    reminderTime: '06:30',
+    reminderEnabled: true,
+    streak: 0,
+    bestStreak: 0,
+    createdAt: new Date().toISOString(),
+    streakShields: 1,
+  },
+  {
+    id: 'habit-3',
+    title: 'Drink 4 Liters of Water',
+    description: 'Stay hydrated throughout the day — 4L target',
     category: 'health',
     color: 'from-cyan-400 to-blue-600',
     icon: 'Droplets',
-    targetCount: 3,
+    targetCount: 4,
     unit: 'Liters',
     reminderTime: '10:00',
     reminderEnabled: true,
@@ -69,36 +85,52 @@ export const INITIAL_HABITS: Habit[] = [
     streakShields: 1,
   },
   {
-    id: 'habit-3',
-    title: 'Deep Work Reading 30m',
-    description: 'Read high-impact mental growth or skill books',
+    id: 'habit-4',
+    title: 'Study Maths (2 Hours)',
+    description: 'Deep focus maths study session — 2 hours daily',
     category: 'learning',
     color: 'from-purple-500 to-indigo-600',
-    icon: 'BookOpen',
-    targetCount: 30,
+    icon: 'Brain',
+    targetCount: 120,
     unit: 'mins',
-    reminderTime: '20:00',
-    reminderEnabled: false,
+    reminderTime: '14:00',
+    reminderEnabled: true,
+    streak: 0,
+    bestStreak: 0,
+    createdAt: new Date().toISOString(),
+    streakShields: 1,
+  },
+  {
+    id: 'habit-5',
+    title: 'Study English (1 Hour)',
+    description: 'English language practice and study — 1 hour daily',
+    category: 'learning',
+    color: 'from-emerald-400 to-teal-600',
+    icon: 'BookOpen',
+    targetCount: 60,
+    unit: 'mins',
+    reminderTime: '16:00',
+    reminderEnabled: true,
     streak: 0,
     bestStreak: 0,
     createdAt: new Date().toISOString(),
     streakShields: 0,
   },
   {
-    id: 'habit-4',
-    title: 'Mindfulness & Gratitude',
-    description: '10 minutes structured meditation & evening reflections',
-    category: 'mindset',
-    color: 'from-emerald-400 to-teal-600',
-    icon: 'Brain',
-    targetCount: 10,
+    id: 'habit-6',
+    title: 'Study GK (1 Hour)',
+    description: 'General Knowledge study session — 1 hour daily',
+    category: 'learning',
+    color: 'from-fuchsia-500 to-pink-600',
+    icon: 'Zap',
+    targetCount: 60,
     unit: 'mins',
-    reminderTime: '21:30',
+    reminderTime: '17:00',
     reminderEnabled: true,
     streak: 0,
     bestStreak: 0,
     createdAt: new Date().toISOString(),
-    streakShields: 1,
+    streakShields: 0,
   },
 ];
 
@@ -222,22 +254,60 @@ export function saveStoredStats(stats: UserStats): void {
   }
 }
 
+export type ThemeMode = 'dark' | 'amoled' | 'midnight';
+
 export function loadDarkMode(): boolean {
+  // Legacy compat — still returns true for dark-class usage
+  return true;
+}
+
+export function saveDarkMode(_isDark: boolean): void {
+  // No-op — theme system handles this now
+}
+
+export function loadTheme(): ThemeMode {
   try {
-    const saved = localStorage.getItem(DARKMODE_KEY);
-    return saved !== null ? JSON.parse(saved) : true; // Default dark for vibrant high energy UI
+    const saved = localStorage.getItem('habitpulse_theme_v1');
+    if (saved && ['dark', 'amoled', 'midnight'].includes(saved)) {
+      return saved as ThemeMode;
+    }
+    return 'dark';
   } catch {
-    return true;
+    return 'dark';
   }
 }
 
-export function saveDarkMode(isDark: boolean): void {
+export function saveTheme(theme: ThemeMode): void {
   try {
-    localStorage.setItem(DARKMODE_KEY, JSON.stringify(isDark));
+    localStorage.setItem('habitpulse_theme_v1', theme);
   } catch {
     // Ignore
   }
 }
+
+export const THEME_CONFIG: Record<ThemeMode, { bg: string; card: string; border: string; label: string; icon: string }> = {
+  dark: {
+    bg: 'bg-slate-950',
+    card: 'bg-slate-900',
+    border: 'border-slate-800',
+    label: 'Dark',
+    icon: '🌙',
+  },
+  amoled: {
+    bg: 'bg-black',
+    card: 'bg-zinc-950',
+    border: 'border-zinc-900',
+    label: 'AMOLED',
+    icon: '⚫',
+  },
+  midnight: {
+    bg: 'bg-[#0a1628]',
+    card: 'bg-[#0f1d32]',
+    border: 'border-[#1a2d4a]',
+    label: 'Midnight',
+    icon: '🌊',
+  },
+};
 
 // Recalculate habit streak based on logs
 export function calculateStreak(habitId: string, logs: HabitLog[]): { current: number; best: number } {

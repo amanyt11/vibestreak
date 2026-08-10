@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Flame, Moon, Sun, Volume2, VolumeX, Sparkles, Share2, Bell, Download, Shield } from 'lucide-react';
+import { Flame, Moon, Sun, Volume2, VolumeX, Sparkles, Share2, Bell, Download, Shield, Trophy, Palette } from 'lucide-react';
 import { UserStats } from '../types';
+import { ThemeMode, THEME_CONFIG } from '../utils/storage';
 
 interface HeaderProps {
   stats: UserStats;
@@ -13,6 +14,9 @@ interface HeaderProps {
   onOpenSocial: () => void;
   onOpenNotifications: () => void;
   onOpenStats: () => void;
+  onOpenAchievements: () => void;
+  theme: ThemeMode;
+  onCycleTheme: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -25,6 +29,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSocial,
   onOpenNotifications,
   onOpenStats,
+  onOpenAchievements,
+  theme,
+  onCycleTheme,
 }) => {
   // Calculate level progress (each level is 500 XP)
   const xpForNextLevel = stats.level * 500;
@@ -169,15 +176,26 @@ export const Header: React.FC<HeaderProps> = ({
               {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </motion.button>
 
-            {/* Dark/Light Mode */}
+            {/* Achievements */}
             <motion.button
               whileHover={{ scale: 1.08 }}
               whileTap={{ scale: 0.92 }}
-              onClick={onToggleDark}
-              className="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl cursor-pointer"
-              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              onClick={onOpenAchievements}
+              className="p-2 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 rounded-xl cursor-pointer"
+              title="Achievements Wall"
             >
-              {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+              <Trophy className="w-4 h-4" />
+            </motion.button>
+
+            {/* Theme Cycle */}
+            <motion.button
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              onClick={onCycleTheme}
+              className="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl cursor-pointer flex items-center gap-1"
+              title={`Theme: ${THEME_CONFIG[theme].label}`}
+            >
+              <span className="text-sm">{THEME_CONFIG[theme].icon}</span>
             </motion.button>
           </div>
 

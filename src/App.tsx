@@ -11,6 +11,7 @@ import {
   loadStoredLogs, saveStoredLogs, 
   loadStoredStats, saveStoredStats, 
   loadDarkMode, saveDarkMode, 
+  loadTheme, saveTheme, THEME_CONFIG, ThemeMode,
   getTodayString, calculateStreak, INITIAL_HABITS 
 } from './utils/storage';
 import { soundFX } from './utils/audio';
@@ -27,6 +28,20 @@ import { AICoachModal } from './components/AICoachModal';
 import { ConfettiExplosion, ConfettiBurst } from './components/ConfettiExplosion';
 import { HabitWidgets } from './components/HabitWidgets';
 import { BackgroundMusicPlayer } from './components/BackgroundMusicPlayer';
+import { ProgressRing } from './components/ProgressRing';
+import { AchievementsWall } from './components/AchievementsWall';
+import { PomodoroTimer } from './components/PomodoroTimer';
+import { WeeklyReport } from './components/WeeklyReport';
+
+const MOTIVATIONAL_QUOTES = [
+  { quote: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln" },
+  { quote: "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", author: "Will Durant" },
+  { quote: "Small daily improvements over time lead to stunning results.", author: "Robin Sharma" },
+  { quote: "Consistency is the DNA of mastery.", author: "Robin Sharma" },
+  { quote: "Success doesn't come from what you do occasionally, it comes from what you do consistently.", author: "Marie Forleo" },
+  { quote: "Action is the foundational key to all success.", author: "Pablo Picasso" },
+  { quote: "You do not rise to the level of your goals. You fall to the level of your systems.", author: "James Clear" }
+];
 
 
 export default function App() {
@@ -34,7 +49,8 @@ export default function App() {
   const [habits, setHabits] = useState<Habit[]>(() => loadStoredHabits());
   const [logs, setLogs] = useState<HabitLog[]>(() => loadStoredLogs());
   const [stats, setStats] = useState<UserStats>(() => loadStoredStats());
-  const [isDark, setIsDark] = useState<boolean>(() => loadDarkMode());
+  const [theme, setTheme] = useState<ThemeMode>(() => loadTheme());
+  const [isDark, setIsDark] = useState<boolean>(true);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
 
   // Filters & Search
@@ -48,9 +64,29 @@ export default function App() {
   const [isSocialOpen, setIsSocialOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isAICoachOpen, setIsAICoachOpen] = useState(false);
+  const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
   const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
   const [overdueAlertHabit, setOverdueAlertHabit] = useState<Habit | null>(null);
   const notifiedScheduleSetRef = React.useRef<Set<string>>(new Set());
+
+  // Daily Motivational Quote calculation
+  const dailyQuote = React.useMemo(() => {
+    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
+    return MOTIVATIONAL_QUOTES[dayOfYear % MOTIVATIONAL_QUOTES.length];
+  }, []);
+
+  const handleCycleTheme = () => {
+    setTheme(prev => (prev === 'dark' ? 'amoled' : prev === 'amoled' ? 'midnight' : 'dark'));
+  };
+
+  // Sync theme to LocalStorage & document root
+  useEffect(() => {
+    saveTheme(theme);
+    document.documentElement.classList.remove('dark', 'theme-amoled', 'theme-midnight');
+    document.documentElement.classList.add('dark');
+    if (theme === 'amoled') document.documentElement.classList.add('theme-amoled');
+    if (theme === 'midnight') document.documentElement.classList.add('theme-midnight');
+  }, [theme]);
 
   // Simple check-in video popup
   const [showCheckInVideo, setShowCheckInVideo] = useState(false);
@@ -463,7 +499,7 @@ export default function App() {
   const todayPercent = totalHabitsCount > 0 ? Math.round((completedTodayCount / totalHabitsCount) * 100) : 0;
 
   return (
-    <div className={`min-h-screen font-sans transition-colors duration-300 ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-900 text-white'}`}>
+    <div className={`min-h-screen font-sans transition-colors duration-300 ${THEME_CONFIG[theme].bg} text-slate-100`}>
       
       {/* Header */}
       <Header
@@ -476,19 +512,22 @@ export default function App() {
         onOpenSocial={() => setIsSocialOpen(true)}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
         onOpenStats={() => setIsStatsOpen(true)}
+        onOpenAchievements={() => setIsAchievementsOpen(true)}
+        theme={theme}
+        onCycleTheme={handleCycleTheme}
       />
 
       {/* Main Body Layout */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         
         {/* High-Energy Hero Dashboard Summary */}
-        <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-slate-900 via-slate-900/90 to-slate-900 border border-slate-800 shadow-2xl mb-8 overflow-hidden">
+        <div className={`relative rounded-3xl p-6 sm:p-8 ${THEME_CONFIG[theme].card} ${THEME_CONFIG[theme].border} border shadow-2xl mb-6 overflow-hidden`}>
           <div className="absolute top-0 right-0 w-80 h-80 bg-lime-400/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-80 h-80 bg-cyan-400/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             
-            <div>
+            <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <span className="px-3 py-1 bg-lime-400/20 text-lime-400 border border-lime-400/30 text-xs font-black uppercase tracking-widest rounded-full flex items-center gap-1.5">
                   <Flame className="w-4 h-4 fill-lime-400 animate-pulse" /> DAILY DASHBOARD
@@ -506,21 +545,17 @@ export default function App() {
               </p>
             </div>
 
-            {/* Launch New Habit Button & Progress Ring */}
-            <div className="flex items-center gap-4">
-              {/* Daily Progress Bar */}
-              <div className="hidden sm:flex flex-col items-end min-w-[140px]">
-                <div className="text-xs font-extrabold text-lime-400 uppercase tracking-wider mb-1">
-                  Today's Score: {todayPercent}%
-                </div>
-                <div className="w-36 h-3 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700">
-                  <motion.div
-                    className="h-full bg-gradient-to-r from-lime-400 via-emerald-400 to-cyan-400 rounded-full"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${todayPercent}%` }}
-                    transition={{ duration: 0.5 }}
-                  />
-                </div>
+            {/* Progress Ring & Launch New Habit Button */}
+            <div className="flex items-center gap-6">
+              {/* Circular Progress Ring */}
+              <div className="shrink-0">
+                <ProgressRing
+                  percent={todayPercent}
+                  size={96}
+                  strokeWidth={9}
+                  label={`${todayPercent}%`}
+                  sublabel="Score"
+                />
               </div>
 
               <motion.button
@@ -530,12 +565,29 @@ export default function App() {
                 className="flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-lime-400 via-emerald-400 to-cyan-400 text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider rounded-2xl shadow-xl shadow-lime-500/20 cursor-pointer"
               >
                 <Plus className="w-5 h-5 stroke-[3]" />
-                <span>Launch New Habit</span>
+                <span>Launch Habit</span>
               </motion.button>
             </div>
 
           </div>
         </div>
+
+        {/* Daily Motivational Quote Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-indigo-950/40 via-purple-950/30 to-slate-900 border border-purple-500/20 shadow-md flex items-center gap-4"
+        >
+          <div className="text-2xl sm:text-3xl shrink-0">💡</div>
+          <div className="flex-1">
+            <p className="text-xs sm:text-sm text-purple-200 font-bold italic">
+              "{dailyQuote.quote}"
+            </p>
+            <span className="text-[10px] font-black text-purple-400 uppercase tracking-wider mt-0.5 block">
+              — {dailyQuote.author}
+            </span>
+          </div>
+        </motion.div>
 
         {/* Daily Risk & Consequence Warning Banner if uncompleted habits exist */}
         {totalHabitsCount > 0 && completedTodayCount < totalHabitsCount && (
@@ -663,6 +715,9 @@ export default function App() {
           </div>
         )}
 
+        {/* Weekly & Monthly Performance Report */}
+        <WeeklyReport habits={habits} logs={logs} />
+
         {/* 30-Day Activity Heatmap Matrix */}
         <StreakHeatmap 
           habits={habits} 
@@ -673,7 +728,18 @@ export default function App() {
 
       </main>
 
+      {/* Floating Pomodoro Timer */}
+      <PomodoroTimer habits={habits} onTimerComplete={(habitId) => handleToggleComplete(habitId)} />
+
       {/* Modals */}
+      <AchievementsWall
+        isOpen={isAchievementsOpen}
+        onClose={() => setIsAchievementsOpen(false)}
+        habits={habits}
+        logs={logs}
+        stats={stats}
+      />
+
       <HabitModal
         isOpen={isHabitModalOpen}
         onClose={() => setIsHabitModalOpen(false)}

@@ -1,0 +1,6 @@
+{
+  "name": "HabitPulse - High Energy Habit Tracker",
+  "description": "Vibrant, high-energy habit tracker with daily streaks, push notifications, CSV export, dark mode, social sharing, and interactive motion elements.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
